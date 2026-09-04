@@ -75,11 +75,7 @@ The interactive menu guides users through five distinct structural biology chall
 
 ## 🚀 Quickstart & Usage
 1. **Run via Google Colab:** Click the badge at the top of this file to launch the master notebook instantly.
-2. **Execute Tests Locally:**
-   ```bash
-   pytest tests/ -v
-   ```
-3. **Interactive Explorer**: Run foldcheck_rna.ipynb interactively to test built-in case studies or input custom prediction URLs. Completed validation sessions automatically archive citation-ready reports into assets/report/.
+2. **Interactive Explorer**: Run foldcheck_rna.ipynb interactively to test built-in case studies or input custom prediction URLs. Completed validation sessions automatically archive citation-ready reports into assets/report/.
 
 ---
 
