@@ -1,91 +1,53 @@
-# FoldCheck-RNA: Automated Nucleic Acid Structural Integrity & Biophysical Validation Suite
+# FoldCheck-RNA
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/mirikrupkin/foldcheck-rna/blob/main/foldcheck-rna.ipynb)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 
-**Author:** [Dr. Miri Krupkin](https://linkedin.com/in/mirikrupkin) (Applied AI Research Scientist & Computational Biologist)
-**Description:** Production-grade architecture for automated nucleic acid structural model validation, stoichiometry-aware monomer isolation, and coarse-grained phosphorus backbone alignment against empirical experimental ground truth.
+> **Version 0.0.1 (2026-09-30), early release.**
+> **New:** 2D structure drawings and 2D distance heat maps (experimental), a prediction-only view, and a pLDDT color legend.
 
----
+**Compare an RNA 3D structure prediction with an experimental structure from the PDB: RMSD, matched nucleotides, sequence identity, and a side-by-side 3D view.**
 
-## 🧬 Project Overview
-`FoldCheck-RNA` is a high-throughput computational pipeline designed to bridge generative structural predictions (such as AlphaFold 3) with empirical validation data from X-ray crystallography and Cryo-EM (RCSB PDB). Standard RNA structural alignments often break down when handling crystal packing dimers, symmetry mates, or unmanaged non-canonical nucleotide modifications.
+Author: [Dr. Miri Krupkin](https://linkedin.com/in/mirikrupkin) (Applied AI Research Scientist & Computational Biologist)
 
-This suite introduces programmatic robustness checks, automated multi-case FASTA sequence extraction, and biophysical confidence mapping to flag AI hallucination risks and global structural compaction errors in RNA models.
+## How to run
+1. Open the notebook in Colab with the badge above. Viewing works without an account; running needs a free Google account.
+2. Choose **Runtime → Run all**, then answer the prompts in the last cell:
+   - press **Enter** or type **1-4** to run a built-in demo (table below), or
+   - paste the **URL of your prediction** (a raw mmCIF or PDB file, not an upload), then the **PDB ID** of the experimental structure. If your file name starts with the PDB ID (for example `1y26_model.cif`), the notebook suggests it.
+3. Results appear below the cell, and an HTML report is saved in `assets/report/`. Colab sessions are temporary, so download what you need.
 
----
+## Built-in demos
+| Option | RNA | PDB ID |
+|---|---|---|
+| Enter | L1 Ribozyme Ligase - circular | 2OIU |
+| 1 | Adenine riboswitch aptamer | 1Y26 |
+| 2 | Yeast tRNA-Phe | 1EHZ |
+| 3 | THF riboswitch | 4LVV |
+| 4 | Hammerhead ribozyme | 2OEU |
+| 5 | Your own prediction: paste its URL, then the PDB ID | yours |
 
-## 🛠️ Tech Stack
-* **Language & Core:** Python 3.10+, NumPy, pandas, PyYAML
-* **Structural Bioinformatics:** BioPython (`MMCIFParser`, `Superimposer`, `PDBIO`), py3Dmol, SciPy (`linear_sum_assignment`, `ConvexHull`)
-* **Testing & Infrastructure:** PyTest, RCSB PDB REST architecture, Jupyter interactive sandbox
+The demo predictions were made with AlphaFold Server (AlphaFold 3).
 
----
+## What it does
+- Matches the nucleotides of the prediction and the experimental structure by sequence alignment, superimposes them (least squares on P atoms, C4' where P is missing), and reports **RMSD, matched nucleotides and sequence identity**.
+- Shows both structures side by side in 3D. The prediction is colored by the B-factor column of its file (pLDDT if your predictor stores it there).
+- Adds 2D structure drawings and 2D distance heat maps for both structures (*experimental*).
+- Leave the PDB ID blank to view your prediction on its own.
+- RMSD only for now: no TM-score, lDDT or base-pair agreement yet.
 
-## 📂 Repository Architecture
+## Known limitations
+- Agreement with one experimental structure is not proof that a prediction is correct: RNAs are flexible, and crystal packing, ligands, ions or construct differences matter.
+- Only the longest RNA chain of each file is used, and NMR entries use model 1 only.
+- Residue names are matched against a built-in list, so a ligand with a nucleotide-like name can be counted (the bound adenine `ADE` in 1Y26) and an unusual residue skipped (the 5' `GTP` in 2OEU). The superposition atom (P, else C4') is chosen per nucleotide, which can shift the RMSD slightly (about 0.08 Å in 1Y26).
+- A valid but wrong PDB ID is not detected. Low sequence identity or few matched pairs gives no warning, so check both numbers.
+- The 2D drawings call base pairs with a distance heuristic, not a base-pair annotator (no complementarity check, no pseudoknots).
+- Tested on RNAs up to 155 nucleotides.
 
-```text
-structural-ai-validation-suite/
-│
-├── src/
-│   ├── constants.py      # Comprehensive RNA modification dictionary & solvent ion filters
-│   ├── fetcher.py        # Automated coordinate downloading & EBI API ingestion handlers
-│   ├── alignment.py      # Stoichiometry parser, pairwise aligner, and P-backbone superimposer
-│   └── metrics.py        # pLDDT confidence mapping and structural state analyzer
-│
-├── data/                 # Experimental mmCIF files, target predictions, and multi-case FASTA
-│   └── all_benchmark_sequences.fasta
-│
-├── configs/              # Centralized hyperparameter configuration
-│   └── config.yaml
-│
-├── assets/               # Compiled publication assets
-│   ├── tables/           # Master benchmark summaries (CSV & LaTeX formats)
-│   └── report/           # Standalone interactive HTML 3D viewer comparison reports
-│
-├── tests/                # Automated pytest verification suite
-│   └── test_pipeline.py
-│
-└── foldcheck_rna.ipynb   # Master executable Jupyter notebook with interactive 3D sandbox
+## Software used
+Biopython, NumPy, pandas, SciPy, PyYAML, py3Dmol, matplotlib, seaborn, pytest and ViennaRNA (2D drawings). Versions are not pinned.
 
+Cock PJA, et al. Biopython: freely available Python tools for computational molecular biology and bioinformatics. *Bioinformatics* 2009;25(11):1422-1423. doi:10.1093/bioinformatics/btp163
 
-```
----
-
-## ⚙️ Key Technical Highlights
-
-1. **Stoichiometry-Aware Monomer Filtering (src/alignment.py)**: Automatically detects and isolates functional monomer chains, stripping out crystal packing dimers and asymmetric unit contact artifacts prior to structural alignment.
-2. **Coarse-Grained Phosphorus Backbone Alignment (src/alignment.py)**: Performs robust global superposition using phosphorus (P) backbone atoms to capture global fold geometry while filtering out local base torsion and stacking noise.
-3. **Comprehensive Modification Registry (src/constants.py)**: Manages over 30 modified nucleotides (including 2'-O-methylations, pseudouridines, and methylated bases), mapping them back to standard canonical residues for accurate sequence alignment.
-4. **Interactive 3D Visualization & HTML Reporting**: Renders synchronized, side-by-side Py3Dmol cartoon views comparing predictions against experimental ground truths, automatically archiving standalone HTML reports for citation.
-5. **Interactive Sandbox & Auto-Fallback**: Features pre-configured case studies highlighting classical RNA structural folds plus a smart custom mode supporting any raw GitHub CIF URL.
-
----
-
- ## 🔬 Benchmarked Biological Case Studies
-The interactive menu guides users through five distinct structural biology challenges:
-* **[1] Adenine Riboswitch Aptamer**: Validates ligand-induced folding and purine-sensing pocket architecture (PDB: 1Y26).
-* **[2] Yeast Phenylalanine tRNA**: Maps classical L-shaped tertiary stacking architecture and modified loop nucleosides (PDB: 1EHZ).
-* **[3] THF Riboswitch Multi-Stem**: Isolates complex multi-stem junction topologies from crystal packing contacts (PDB: 4LVV).
-* **[4] Hammerhead Ribozyme Core**: Accurately aligns catalytic core phosphate backbone for cleavage site evaluation (PDB: 2OEU).
-* **[5] Custom Sandbox & Circular RNA Demo**: Input any raw GitHub CIF URL and 4-letter PDB code to benchmark custom models. Leaving the prompt blank automatically launches the default demonstration featuring the L1 Ribozyme Circular Adduct (PDB: 2OIU), highlighting topological failure modes of linear AI predictors.
-
----
-
-## 🚀 Quickstart & Usage
-1. **Run via Google Colab:** Click the badge at the top of this file to launch the master notebook instantly.
-2. **Interactive Explorer**: Run foldcheck_rna.ipynb interactively to test built-in case studies or input custom prediction URLs. Completed validation sessions automatically archive citation-ready reports into assets/report/.
-
----
-
-## 📚 References & Attribution
-1. **AlphaFold 3 Architecture**: Abramson, J., et al. (2024). "Accurate structure prediction of biomolecular interactions with AlphaFold 3." Nature, 630(8016), 493–500.
-2. **Biopython PDB Module**: Cock, P. J., et al. (2009). "Biopython: freely available Python tools for computational molecular biology and bioinformatics." Bioinformatics, 25(11), 1422–1423.
-3. **Optimal Superposition (RMSD)**: Kabsch, W. (1976). "A solution for the best rotation to relate two sets of vectors." Acta Cryst. A, 32(5), 922–923.
-4. **Global Chain Matching**: Munkres, J. (1957). "Algorithms for the assignment and transportation problems." J. Soc. Ind. Appl. Math., 5(1), 32–38.
-
- ---
-
-## 📜 License
-Distributed under the MIT License. See LICENSE for more information.
+## License
+MIT License. See `LICENSE`.
